@@ -1,182 +1,43 @@
-# Copilot Pool Manager (CPM)
+# Copilot Pool Manager (CPM) 🚀
 
-A production-quality, Windows-first CLI application for managing multiple independently authorized GitHub Copilot accounts with secure credential storage, automatic health monitoring, rate-limit cooldown management, and official Copilot CLI orchestration.
+> **Never get stopped by rate limits again.** Pool, rotate, and automatically switch between multiple authorized GitHub Copilot accounts right from your Windows terminal.
 
----
-
-## Overview
-
-**Copilot Pool Manager (CPM)** acts as a local orchestration layer for GitHub Copilot. It allows developers working on multiple projects or across organizations to pool and switch authorized GitHub Copilot accounts seamlessly while running the official GitHub Copilot CLI.
-
-```text
-               ┌──────────────────────────────┐
-               │  Copilot Pool Manager (CPM)  │
-               └──────────────┬───────────────┘
-                              │
-       ┌───────────────┬──────┴────────┬──────────────┐
-       ▼               ▼               ▼              ▼
-┌─────────────┐ ┌─────────────┐ ┌─────────────┐ ┌─────────────┐
-│  Accounts   │ │ Credentials │ │  Cooldown   │ │  Projects   │
-│ & Selection │ │   WinCred   │ │  & Status   │ │  & Usage    │
-└──────┬──────┘ └──────┬──────┘ └──────┬──────┘ └──────┬──────┘
-       │               │               │               │
-       └───────────────┼───────────────┴───────────────┘
-                       │ Environment Injection (COPILOT_GITHUB_TOKEN)
-                       ▼
-         ┌───────────────────────────┐
-         │ Official Copilot CLI Tool │
-         └───────────────────────────┘
-```
-
-CPM is **not** a Copilot emulator or replacement—it is a wrapper and orchestration tool that launches the official GitHub Copilot CLI transparently, forwarding all standard I/O directly to your terminal.
+[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
+[![Node.js](https://img.shields.io/badge/Node.js-%3E%3D18.0.0-green.svg)](https://nodejs.org)
+[![Platform](https://img.shields.io/badge/Platform-Windows-0078D6.svg)](https://microsoft.com)
 
 ---
 
-## Key Features
+## ⚡ 30-Second Quick Start
 
-- **Windows Credential Manager Integration**: All sensitive credentials are encrypted and stored in the native Windows Credential store via Win32 C APIs (`CredReadW`, `CredWriteW`, `CredDeleteW`). Zero plaintext tokens in SQLite, config files, or logs.
-- **AMSI & Antivirus Safe**: Employs strictly direct N-API / native system interfaces. Never executes dynamic reflection or PowerShell cryptographic one-liners that could trigger Defender or AMSI heuristics (`Trojan:Win32/Commando.A!ml`).
-- **Transparent CLI Forwarding**: Standard input, output, and error streams are forwarded transparently. The native Copilot experience remains completely unchanged.
-- **Intelligent Selection Strategies**:
-  - `least-recently-used` (default)
-  - `round-robin`
-  - `priority`
-  - Project-level preferred account binding
-- **Automated Cooldown & Rate-Limit Tracking**: Detects rate limits and server errors, temporarily cooling accounts down with countdown timers while auto-switching to ready accounts.
-- **Accurate Observable Metrics**: Never fabricates numbers. Displays only authentic metrics reported by Copilot sessions or `/usage` commands (`N/A` when unavailable).
-- **Interactive Terminal Dashboard**: Single-glance status overview with quick keyboard shortcuts.
-
----
-
-## Prerequisites
-
-- **Windows 11 / Windows 10**
-- **Node.js**: v18.0.0 or higher (LTS recommended)
-- **PowerShell** 5.1+ or PowerShell 7+
-- **GitHub Copilot CLI** (install via GitHub CLI: `gh extension install github/gh-copilot` or standalone installer)
-
----
-
-## Installation
-
-Clone the repository and install dependencies:
-
+### 1. Install & Link Globally
 ```powershell
-git clone https://github.com/your-username/copilot-pool-manager.git cpm
-cd cpm
+git clone https://github.com/a7x3a/copilot-pool-manager.git
+cd copilot-pool-manager
 npm install
 npm run build
 npm link
 ```
 
-Now you can invoke `cpm` globally from any PowerShell or Command Prompt window:
-
+### 2. Run the Setup Wizard
 ```powershell
-cpm --help
+cpm setup
 ```
+Follow the interactive wizard:
+* Choose how many accounts to pool (e.g. 2 or 3).
+* Authenticate each account with either a **Personal Access Token** or via your browser (**Device Flow**).
 
----
-
-## Quick Start
-
-### 1. Check System Health
-
-Run the built-in diagnostic tool to ensure your environment is ready:
-
-```powershell
-cpm doctor
-```
-
-Output:
-```text
-CPM Doctor
-────────────────────────────────────────
- Node.js             ✓  v22.22.3
- Copilot CLI         ✓  copilot version 1.0.0
- SQLite & Database   ✓  C:\Users\A\.cpm\cpm.db
- Credential Store    ✓  Windows Credential Manager
- Configuration       ✓  C:\Users\A\.cpm\config.json
-
-Accounts
-────────────────────────────────────────
- Accounts            !  No accounts registered. Run "cpm add" to add an account.
-
-Projects
-────────────────────────────────────────
- Projects            ✓  No projects registered (cpm run works in current directory)
-```
-
-### 2. Add an Account
-
-Add your GitHub Copilot account using either a Personal Access Token (PAT) or the official GitHub OAuth Device Flow:
-
-```powershell
-cpm add
-```
-
-Follow the on-screen prompt:
-- Choose **GitHub Personal Access Token** to paste an existing token with `copilot` access.
-- Choose **GitHub OAuth Device Flow** to authenticate interactively via your browser at `https://github.com/login/device`.
-
-### 3. Launch Copilot
-
-Launch Copilot in the current directory:
-
+### 3. Start Coding!
 ```powershell
 cpm run
 ```
-
-Or pass any standard Copilot CLI arguments:
-
-```powershell
-cpm run -- explain "what does this script do?"
-```
+CPM automatically picks the best available account and starts Copilot CLI.
 
 ---
 
-## CLI Command Reference
+## 🖥️ Terminal Dashboard
 
-### Accounts Management
-
-| Command | Description |
-|---|---|
-| `cpm accounts` | List all registered accounts with status, plan, cooldown, and last used time |
-| `cpm add` | Add and authenticate a new GitHub account |
-| `cpm login [account]` | Re-authenticate an existing account |
-| `cpm logout <account>` | Clear stored credentials for an account |
-| `cpm remove <account>` | Delete an account registration and associated credentials from CPM |
-
-### Project Management
-
-Register specific folders with preferred accounts:
-
-```powershell
-# Register a project
-cpm project add QTrade D:\Projects\QTrade
-
-# List registered projects
-cpm projects
-
-# Run Copilot directly in project directory with its configured account
-cpm run QTrade
-
-# Remove a registered project
-cpm project remove QTrade
-```
-
-### Diagnostics & Monitoring
-
-| Command | Description |
-|---|---|
-| `cpm status` | Summary of active accounts, pool availability, and project binding |
-| `cpm usage` | Observable token counts and session statistics |
-| `cpm doctor` | System, database, credential, and account diagnostics |
-| `cpm logs [-n lines]` | Chronological audit log of account selection, switches, and cooldowns |
-| `cpm settings [key] [val]` | View or update configuration settings |
-
-### Interactive Dashboard
-
-Launch without arguments to enter the terminal dashboard:
+Just type `cpm` from any terminal:
 
 ```powershell
 cpm
@@ -187,102 +48,103 @@ cpm
 │                  COPILOT POOL MANAGER                       │
 ╰──────────────────────────────────────────────────────────────╯
 
-ACCOUNTS
+ACCOUNTS POOL
 
  ID   ACCOUNT             STATUS       USAGE       LAST USED
  ─────────────────────────────────────────────────────────────
- 01   github-user-1       ACTIVE       --          now
- 02   github-user-2       READY        --          12 min ago
- 03   github-user-3       COOLDOWN     07:32       14 min ago
+ 01   work-user           ACTIVE       --          now
+ 02   personal-user       READY        --          12 min ago
+ 03   backup-user         COOLDOWN     08:15       25 min ago
 
 CURRENT PROJECT
-
- (No project matched current directory)
+ QTrade (D:\Projects\QTrade)
 
 ACTIVE ACCOUNT
+ #01 work-user (ACTIVE)
 
- #01 github-user-1
- Status: ACTIVE
-
-SYSTEM
-
- Accounts:       3
- Available:      2
- Active:          1
- Limited:         1
-
-[1] Run Copilot
-[2] Accounts
-[3] Usage
-[4] Projects
-[5] Health
-[6] Logs
-[Q] Quit
+ACTIONS / COMMANDS
+  [1] Run Copilot           (/run)
+  [2] Accounts Pool         (/accounts)
+  [3] Switch Account        (/switch)
+  [4] Usage & Limits        (/usage)
+  [5] Projects              (/projects)
+  [6] Health Doctor         (/doctor)
+  [7] Logs & Events         (/logs)
+  [8] Setup Wizard          (/setup)
+  [Q] Quit                  (/quit)
 ```
 
 ---
 
-## Security Architecture
+## ⌨️ Command Cheatsheet
 
-1. **Operating System Credential Storage**: CPM delegates secret storage directly to the Windows Credential Manager. Secrets are never saved to SQLite, never committed to Git, and never written to configuration files.
-2. **Log Sanitization**: Every log output, error trace, and subprocess output is filtered through a sanitization pipeline that redacts GitHub tokens (`ghp_*`, `gho_*`, `github_pat_*`) and any known runtime secrets before writing to disk.
-3. **Subprocess Isolation**: Authentication tokens are passed exclusively in-memory through the spawned child process's environment variables (`COPILOT_GITHUB_TOKEN`, `GH_TOKEN`). When the process terminates, memory is freed immediately.
+| Command | What it does |
+|---|---|
+| `cpm` | Opens the interactive visual dashboard |
+| `cpm setup` | First-time setup wizard to connect accounts |
+| `cpm run` | Launches official Copilot CLI with the active account |
+| `cpm run <project>` | Jumps to a project folder and runs Copilot |
+| `cpm switch` | Interactively switch your active account |
+| `cpm switch <id>` | Instantly switch to a specific account (e.g. `cpm switch 02`) |
+| `cpm ide code .` | Launches **VS Code** with the active Copilot account |
+| `cpm ide cursor .` | Launches **Cursor** with the active Copilot account |
+| `cpm doctor` | Self-diagnostic check (Node, Copilot CLI, Windows Vault, DB) |
+| `cpm accounts` | Lists all accounts, statuses, and cooldowns |
+| `cpm project add` | Saves a folder as a named project |
+| `cpm usage` | Shows observed token counts & sessions |
 
 ---
 
-## Configuration
+## 💻 IDE Integration (VS Code, Cursor, JetBrains)
 
-CPM configuration is stored at `%USERPROFILE%\.cpm\config.json`.
-
-```json
-{
-  "copilotCommand": "copilot",
-  "selectionStrategy": "least-recently-used",
-  "automaticSelection": true,
-  "respectCooldown": true,
-  "usageTracking": true,
-  "logging": true,
-  "defaultCooldownMinutes": 15
-}
-```
-
-View or edit settings through the CLI:
+CPM can launch your favorite IDE with the pooled Copilot token automatically injected:
 
 ```powershell
-cpm settings selectionStrategy round-robin
-cpm settings defaultCooldownMinutes 20
+# Open VS Code
+cpm ide code .
+
+# Open Cursor
+cpm ide cursor .
+
+# Open Windsurf
+cpm ide windsurf .
+```
+
+Or export the token into your current PowerShell session:
+```powershell
+cpm env powershell
 ```
 
 ---
 
-## Development & Testing
+## 🔄 Automatic Rate-Limit Switching
 
-### Development Mode
+You don't have to worry about running into rate limits:
 
-Run directly with `tsx` without re-compiling:
+1. **Detection**: If GitHub returns a rate limit (HTTP 429), CPM puts that account on a temporary cooldown (e.g. 15 minutes).
+2. **Auto-Switch**: CPM immediately switches to your next available, healthy account.
+3. **Recovery**: When the cooldown timer reaches zero, the account becomes `READY` again automatically.
 
-```powershell
-npm run dev -- status
-```
+---
 
-### Running Tests
+## 🔒 Security & Antivirus Safe
 
-Execute the complete test suite:
+* **Windows Credential Manager**: Tokens are stored securely in Windows' built-in OS vault via native Win32 C APIs (`CredReadW` / `CredWriteW`). No plaintext passwords in files or databases.
+* **AMSI Safe**: Never executes suspicious PowerShell one-liners or dynamic in-memory crypto (`Add-Type`). 100% clean with Windows Defender.
+* **Redacted Logs**: Secrets and token patterns (`ghp_*`, `gho_*`, `github_pat_*`) are automatically stripped before writing to any log.
+
+---
+
+## 🧪 Testing
+
+Run the full test suite with Vitest:
 
 ```powershell
 npm test
 ```
 
-### Database Migrations
-
-Generate or inspect SQLite migrations via Drizzle Kit:
-
-```powershell
-npm run generate
-```
-
 ---
 
-## License
+## 📄 License
 
-MIT
+[MIT](LICENSE) © 2026 Copilot Pool Manager Contributors
