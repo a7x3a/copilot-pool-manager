@@ -20,7 +20,7 @@
   "scripts": {
     "build": "tsc",
     "dev": "tsx src/cli/index.ts",
-    "test": "vitest run",
+    "test": "vitest run --fileParallelism=false",
     "test:watch": "vitest",
     "generate": "drizzle-kit generate",
     "migrate": "tsx src/db/migrate.ts",

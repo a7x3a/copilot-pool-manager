@@ -17,6 +17,8 @@ export function classifyError(errorOutput: string, exitCode?: number): ErrorClas
   if (
     lower.includes('rate limit') ||
     lower.includes('quota exceeded') ||
+    lower.includes('exceeded your monthly quota') ||
+    lower.includes('exceeded your quota') ||
     lower.includes('too many requests') ||
     lower.includes('status 429') ||
     lower.includes('429 too many') ||

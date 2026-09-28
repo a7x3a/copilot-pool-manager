@@ -24,7 +24,7 @@ export interface SupervisorOptions {
   maxRotations?: number;
 }
 
-const RATE_LIMIT_REGEX = /(?:status\s*429|429\s*too\s*many|rate\s*limit|secondary\s*rate\s*limit|quota\s*exceeded|usage\s*limit\s*reached|you\s*have\s*exceeded\s*your\s*rate\s*limit|insufficient\s*quota)/i;
+const RATE_LIMIT_REGEX = /(?:status\s*429|429\s*too\s*many|rate\s*limit|secondary\s*rate\s*limit|quota\s*exceeded|exceeded\s*(?:your\s*)?(?:monthly\s*)?quota|usage\s*limit\s*reached|you\s*have\s*exceeded\s*your(?:\s*\w+)*\s*(?:rate\s*limit|quota)|insufficient\s*quota)/i;
 
 export class CopilotSupervisor {
   private command: string;

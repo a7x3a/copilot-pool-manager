@@ -93,4 +93,50 @@ describe('CopilotSupervisor Real-Time Auto-Rotation', () => {
     expect(active?.id).toBe(acc2.id);
     expect(active?.githubUsername).toBe('user-two');
   });
+
+  it('detects "You have exceeded your monthly quota" and auto-rotates', async () => {
+    const quotaMockBin = path.join(tempDir, 'mock-quota.js');
+    fs.writeFileSync(
+      quotaMockBin,
+      `
+      const token = process.env.COPILOT_GITHUB_TOKEN || '';
+      if (token.includes('acc1')) {
+        process.stderr.write("You have exceeded your monthly quota (Request ID: C0AC:B3ABF:16EEE:199B6:6ABAE09E)\\n");
+        setTimeout(() => process.exit(1), 100);
+      } else {
+        process.stdout.write("Success on rotated account!\\n");
+        process.exit(0);
+      }
+      `,
+      'utf8'
+    );
+
+    const acc1 = await accountManager.addAccount({
+      githubUsername: 'user-one',
+      token: 'ghp_token_acc1_12345',
+      copilotPlan: 'individual',
+    });
+
+    const acc2 = await accountManager.addAccount({
+      githubUsername: 'user-two',
+      token: 'ghp_token_acc2_67890',
+      copilotPlan: 'business',
+    });
+
+    accountManager.setActiveAccount(acc1.id);
+
+    const supervisor = new CopilotSupervisor({
+      command: `node "${quotaMockBin}"`,
+      cliArgs: ['-p', 'test'],
+      cwd: tempDir,
+      initialAccount: acc1,
+    });
+
+    const exitCode = await supervisor.run();
+    expect(exitCode).toBe(0);
+
+    const updatedAcc1 = accountManager.getAccount(acc1.id)!;
+    expect(cooldownManager.isCoolingDown(updatedAcc1)).toBe(true);
+    expect(updatedAcc1.status).toBe('COOLDOWN');
+  });
 });
