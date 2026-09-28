@@ -156,17 +156,30 @@ export class HealthChecker {
     // 2. Check Copilot CLI
     try {
       const cmd = config.copilotCommand || 'copilot';
-      const versionOut = execSync(`${cmd} --version`, {
-        encoding: 'utf8',
-        stdio: ['ignore', 'pipe', 'pipe'],
-        windowsHide: true,
-      }).trim();
+      let versionOut = '';
+      try {
+        versionOut = execSync(`${cmd} --version`, {
+          encoding: 'utf8',
+          stdio: ['ignore', 'pipe', 'pipe'],
+          windowsHide: true,
+        }).trim();
+      } catch {
+        if (cmd === 'copilot') {
+          versionOut = execSync('gh copilot -- --version', {
+            encoding: 'utf8',
+            stdio: ['ignore', 'pipe', 'pipe'],
+            windowsHide: true,
+          }).trim();
+        } else {
+          throw new Error('Not found');
+        }
+      }
       system.push({ name: 'Copilot CLI', status: 'ok', message: versionOut });
     } catch {
       system.push({
         name: 'Copilot CLI',
         status: 'warn',
-        message: `Command "${config.copilotCommand}" not found in PATH. Install via "gh extension install github/gh-copilot" or official installer.`,
+        message: `Command "${config.copilotCommand}" not found in PATH. Install via "npm install -g @github/copilot" or use GitHub CLI ("gh copilot").`,
       });
     }
 

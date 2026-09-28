@@ -1,6 +1,7 @@
 import pc from 'picocolors';
 import { copilotRunner } from '../../core/copilot-runner';
 import { projectManager } from '../../core/project-manager';
+import { accountManager } from '../../core/account-manager';
 import { logError } from '../../terminal/progress';
 
 export async function runCommand(projectOrAccount?: string, cliArgs: string[] = []): Promise<void> {
@@ -9,14 +10,22 @@ export async function runCommand(projectOrAccount?: string, cliArgs: string[] = 
     let accountId: string | undefined;
 
     if (projectOrAccount) {
-      // Check if it's a project name
-      const proj = projectManager.getProject(projectOrAccount);
-      if (proj) {
-        projectName = proj.name;
+      if (projectOrAccount.startsWith('-')) {
+        // Flag passed as first argument
+        cliArgs = [projectOrAccount, ...cliArgs];
       } else {
-        // Maybe it's an explicit account ID or username?
-        // If not a project, treat it as project name attempt
-        projectName = projectOrAccount;
+        const proj = projectManager.getProject(projectOrAccount);
+        if (proj) {
+          projectName = proj.name;
+        } else {
+          const acc = accountManager.getAccount(projectOrAccount);
+          if (acc) {
+            accountId = acc.id;
+          } else {
+            // Not a registered project or account, pass through to Copilot CLI
+            cliArgs = [projectOrAccount, ...cliArgs];
+          }
+        }
       }
     }
 
@@ -26,11 +35,13 @@ export async function runCommand(projectOrAccount?: string, cliArgs: string[] = 
       cliArgs,
     });
 
-    if (exitCode !== 0) {
+    if (exitCode !== 0 && process.env.CPM_DASHBOARD !== 'true') {
       process.exit(exitCode);
     }
   } catch (err: any) {
     logError(err.message);
-    process.exit(1);
+    if (process.env.CPM_DASHBOARD !== 'true') {
+      process.exit(1);
+    }
   }
 }

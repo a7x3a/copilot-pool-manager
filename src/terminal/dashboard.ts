@@ -60,14 +60,13 @@ export function renderDashboardView(): string {
     pc.bold('⚡ ACTIONS & COMMANDS'),
     pc.dim('────────────────────────────────────────────────────────────'),
     `  ${pc.cyan('[1]')} 🚀 Run Copilot CLI     ${pc.dim('(/run)')}`,
-    `  ${pc.cyan('[2]')} 💻 Launch VS Code      ${pc.dim('(/code)')}`,
-    `  ${pc.cyan('[3]')} 🔄 Switch Account      ${pc.dim('(/switch)')}`,
-    `  ${pc.cyan('[4]')} 👥 Accounts Pool       ${pc.dim('(/accounts)')}`,
-    `  ${pc.cyan('[5]')} 📊 Usage & Limits      ${pc.dim('(/usage)')}`,
-    `  ${pc.cyan('[6]')} 📁 Projects            ${pc.dim('(/projects)')}`,
-    `  ${pc.cyan('[7]')} 🩺 Health Doctor       ${pc.dim('(/doctor)')}`,
-    `  ${pc.cyan('[8]')} 📜 Event Logs          ${pc.dim('(/logs)')}`,
-    `  ${pc.cyan('[9]')} ⚙️  Setup Wizard        ${pc.dim('(/setup)')}`,
+    `  ${pc.cyan('[2]')} 🔄 Switch Account      ${pc.dim('(/switch)')}`,
+    `  ${pc.cyan('[3]')} 👥 Accounts Pool       ${pc.dim('(/accounts)')}`,
+    `  ${pc.cyan('[4]')} 📊 Usage & Limits      ${pc.dim('(/usage)')}`,
+    `  ${pc.cyan('[5]')} 📁 Projects            ${pc.dim('(/projects)')}`,
+    `  ${pc.cyan('[6]')} 🩺 Health Doctor       ${pc.dim('(/doctor)')}`,
+    `  ${pc.cyan('[7]')} 📜 Event Logs          ${pc.dim('(/logs)')}`,
+    `  ${pc.cyan('[8]')} ⚙️  Setup Wizard        ${pc.dim('(/setup)')}`,
     `  ${pc.yellow('[Q]')} 🚪 Quit                ${pc.dim('(/quit)')}`,
     '',
   ];
@@ -77,7 +76,7 @@ export function renderDashboardView(): string {
 
 export interface DashboardHandlers {
   onRunCopilot: () => Promise<void>;
-  onCode: () => Promise<void>;
+  onCode?: () => Promise<void>;
   onAccounts: () => Promise<void>;
   onSwitch: () => Promise<void>;
   onUsage: () => Promise<void>;
@@ -116,7 +115,7 @@ export async function runInteractiveDashboard(handlers: DashboardHandlers): Prom
     const response = await prompts({
       type: 'text',
       name: 'action',
-      message: 'Select an option or type a command (e.g. 2 or /code):',
+      message: 'Select an option or type a command (e.g. 1 or /run):',
     });
 
     const choice = (response.action || '').trim().toLowerCase();
@@ -132,54 +131,56 @@ export async function runInteractiveDashboard(handlers: DashboardHandlers): Prom
         case '1':
         case '/run':
           await handlers.onRunCopilot();
-          break;
-        case '2':
-        case '/code':
-          await handlers.onCode();
           await pausePrompt();
           break;
-        case '3':
+        case '2':
         case '/switch':
           await handlers.onSwitch();
           await pausePrompt();
           break;
-        case '4':
+        case '3':
         case '/accounts':
           await handlers.onAccounts();
           await pausePrompt();
           break;
-        case '5':
+        case '4':
         case '/usage':
           await handlers.onUsage();
           await pausePrompt();
           break;
-        case '6':
+        case '5':
         case '/projects':
           await handlers.onProjects();
           await pausePrompt();
           break;
-        case '7':
+        case '6':
         case '/doctor':
         case '/health':
           await handlers.onHealth();
           await pausePrompt();
           break;
-        case '8':
+        case '7':
         case '/logs':
           await handlers.onLogs();
           await pausePrompt();
           break;
-        case '9':
+        case '8':
         case '/setup':
           await handlers.onSetup();
           await pausePrompt();
           break;
+        case '/code':
+          if (handlers.onCode) {
+            await handlers.onCode();
+            await pausePrompt();
+          }
+          break;
         case '/help':
-          console.log('\nCommands: /run, /code, /switch, /accounts, /usage, /projects, /doctor, /logs, /setup, /quit\n');
+          console.log('\nCommands: /run, /switch, /accounts, /usage, /projects, /doctor, /logs, /setup, /quit\n');
           await pausePrompt();
           break;
         default:
-          console.log(pc.yellow('Invalid selection. Type 1-9, /command, or Q to quit.'));
+          console.log(pc.yellow('Invalid selection. Type 1-8, /command, or Q to quit.'));
           await pausePrompt();
           break;
       }

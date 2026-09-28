@@ -25,22 +25,21 @@ cpm setup
 ```
 The wizard will ask you how many accounts to pool. Simply paste each account's **GitHub Copilot Token / API Key** (no OAuth or browser logins needed).
 
-> **🔑 How to generate your token in 30 seconds:**
-> 1. Go to: [github.com/settings/tokens](https://github.com/settings/tokens)
-> 2. Click: **Generate new token** ➔ **Generate new token (classic)**  
->    *(Note: You must choose **Classic**. GitHub's fine-grained tokens cannot access Copilot).*
-> 3. Enter a note: `cpm`
-> 4. Check these scopes:
->    * ✔ **`repo`** — Required by Copilot to read codebase files and provide accurate context.
->    * ✔ **`read:user`** — Allows CPM to identify your account handle.
->    * ✔ **`copilot`** — If displayed for your account or organization.
-> 5. Click **Generate token** and copy the `ghp_...` key into CPM.
+> **🔑 How to generate your token in 60 seconds:**
+> 1. Go to: [github.com/settings/personal-access-tokens/new](https://github.com/settings/personal-access-tokens/new)  
+>    *(Note: GitHub Copilot CLI **requires a Fine-grained PAT** (`github_pat_`) or OAuth token (`gho_`). Classic `ghp_` tokens are rejected).*
+> 2. Token name: `cpm`
+> 3. Resource owner: Select your **personal account** (not an org)
+> 4. Permissions:
+>    * 👉 **Account permissions**: Set **`Copilot Requests`** to **`Read and write`** *(Required)*
+>    * 👉 **Repository permissions**: Set **`Contents`** to **`Read`**
+> 5. Click **Generate token** and copy the `github_pat_...` key into CPM.
 
-### 3. Open VS Code with Your Active Account
+### 3. Launch Copilot CLI with Your Active Account
 ```powershell
-cpm code .
+cpm run
 ```
-CPM injects your authenticated Copilot session and launches VS Code!
+CPM automatically installs the official Copilot CLI if not yet present, injects your authenticated session, and runs your pooled Copilot CLI session!
 
 ---
 

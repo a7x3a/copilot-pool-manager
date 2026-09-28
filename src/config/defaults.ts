@@ -8,6 +8,7 @@ export const DEFAULT_CONFIG: CpmConfig = {
   usageTracking: true,
   logging: true,
   defaultCooldownMinutes: 15,
+  autoRotateOnRateLimit: true,
 };
 
 export const CREDENTIAL_SERVICE_NAME = 'cpm:copilot';

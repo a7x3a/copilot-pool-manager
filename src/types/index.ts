@@ -102,6 +102,7 @@ export interface CpmConfig {
   usageTracking: boolean;
   logging: boolean;
   defaultCooldownMinutes: number;
+  autoRotateOnRateLimit: boolean;
 }
 
 export interface DoctorCheckItem {

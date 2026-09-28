@@ -12,6 +12,7 @@ export const CpmConfigSchema = z.object({
   usageTracking: z.boolean().default(true),
   logging: z.boolean().default(true),
   defaultCooldownMinutes: z.number().default(15),
+  autoRotateOnRateLimit: z.boolean().default(true),
 });
 
 export function getCpmDir(): string {

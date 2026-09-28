@@ -5,24 +5,33 @@ import { tokenManager } from '../../auth/token-manager';
 import { logSuccess, logError, logInfo } from '../../terminal/progress';
 
 export async function addAccountCommand(): Promise<void> {
-  console.log('\n  ' + pc.cyan(pc.bold('🔑 Add GitHub Copilot Account (Token / API Key)')));
+  console.log('\n  ' + pc.cyan(pc.bold('🔑 Add GitHub Copilot Account (Fine-grained PAT / Token)')));
   console.log('  ' + pc.dim('────────────────────────────────────────────────────────────'));
-  console.log(`  ${pc.bold('Important:')} Use a ${pc.green(pc.bold('Classic Token'))}. GitHub does not support Copilot on fine-grained tokens.`);
-  console.log(`\n  ${pc.bold('How to generate your token in 30 seconds:')}`);
-  console.log(`  1. Open: ${pc.cyan(pc.underline('https://github.com/settings/tokens'))}`);
-  console.log(`  2. Click: ${pc.bold('Generate new token')} ➔ ${pc.green(pc.bold('Generate new token (classic)'))}`);
-  console.log(`  3. Name: ${pc.dim('cpm')}`);
-  console.log(`  4. Check these required scopes:`);
-  console.log(`     ${pc.green('✔')} ${pc.bold('repo')}       ${pc.dim('(Allows Copilot to read codebase context & files)')}`);
-  console.log(`     ${pc.green('✔')} ${pc.bold('read:user')}  ${pc.dim('(Allows CPM to verify your GitHub account)')}`);
-  console.log(`     ${pc.green('✔')} ${pc.bold('copilot')}    ${pc.dim('(If shown under your account or organization)')}`);
-  console.log(`  5. Click ${pc.bold('Generate token')} and paste below.\n`);
+  console.log(`  ${pc.bold('Important:')} GitHub Copilot CLI ${pc.red(pc.bold('REJECTS classic tokens (ghp_)'))}.`);
+  console.log(`  You MUST use a ${pc.green(pc.bold('Fine-grained Personal Access Token (github_pat_)'))} or an OAuth token.\n`);
+  console.log(`  ${pc.bold('How to create your Fine-Grained Token in 60 seconds:')}`);
+  console.log(`  1. Open: ${pc.cyan(pc.underline('https://github.com/settings/personal-access-tokens/new'))}`);
+  console.log(`  2. Token name: ${pc.dim('cpm')}`);
+  console.log(`  3. Resource owner: Select your ${pc.bold('personal account')} (not an org)`);
+  console.log(`  4. Repository access: Select ${pc.bold('All repositories')} (or Public repositories)`);
+  console.log(`  5. Permissions:`);
+  console.log(`     👉 Click ${pc.bold('Account permissions')}:`);
+  console.log(`        [✔] ${pc.green(pc.bold('Copilot Requests'))}  ➔ Set to ${pc.green(pc.bold('Read and Write'))} ${pc.yellow('(REQUIRED for Copilot)')}`);
+  console.log(`     👉 Click ${pc.bold('Repository permissions')}:`);
+  console.log(`        [✔] ${pc.green(pc.bold('Contents'))}          ➔ Set to ${pc.green(pc.bold('Read'))} ${pc.dim('(allows reading code context)')}`);
+  console.log(`  6. Click ${pc.bold('Generate token')} and copy the ${pc.green('github_pat_...')} key.\n`);
 
   const tokenResponse = await prompts({
     type: 'password',
     name: 'token',
-    message: 'Paste your GitHub Classic Token (ghp_...):',
-    validate: (v: string) => (v && v.trim().length > 0 ? true : 'Token cannot be empty'),
+    message: 'Paste your Fine-Grained Token (github_pat_...) or OAuth Token (gho_...):',
+    validate: (v: string) => {
+      if (!v || v.trim().length === 0) return 'Token cannot be empty';
+      if (v.trim().startsWith('ghp_')) {
+        return 'Classic tokens (ghp_) are rejected by Copilot CLI. Please create a Fine-grained PAT (github_pat_)';
+      }
+      return true;
+    },
   });
 
   if (!tokenResponse.token) {

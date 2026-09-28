@@ -23,6 +23,7 @@ program
 // Dashboard (default command when no args given)
 program
   .action(async () => {
+    process.env.CPM_DASHBOARD = 'true';
     await runInteractiveDashboard({
       onRunCopilot: async () => {
         await runCommand();

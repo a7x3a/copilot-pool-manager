@@ -32,6 +32,13 @@ export class AccountManager {
     return db.select().from(accountsTable).all() as Account[];
   }
 
+  public getActiveAccount(): Account | null {
+    cooldownManager.checkAndExpireCooldowns();
+    const db = getDb();
+    const results = db.select().from(accountsTable).where(eq(accountsTable.status, 'ACTIVE')).all() as Account[];
+    return results.length > 0 ? results[0] : null;
+  }
+
   public getAccount(idOrUsername: string): Account | null {
     cooldownManager.checkAndExpireCooldowns();
     const db = getDb();

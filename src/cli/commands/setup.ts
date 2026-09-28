@@ -28,8 +28,13 @@ export async function setupWizardCommand(): Promise<void> {
   // Step 2: Account Pool Setup
   console.log(pc.bold('Step 2: Add Accounts to Pool'));
   console.log('────────────────────────────────────────');
-  console.log(`  ${pc.bold('Note:')} Use ${pc.green(pc.bold('Generate new token (classic)'))} at ${pc.cyan(pc.underline('https://github.com/settings/tokens'))}`);
-  console.log(`  Scopes needed: ${pc.bold('repo')} (code context) & ${pc.bold('read:user')} (profile identity).\n`);
+  console.log(`  ${pc.bold('Important:')} Copilot CLI ${pc.red(pc.bold('REJECTS classic tokens (ghp_)'))}. Use Fine-grained tokens!`);
+  console.log(`  ${pc.bold('Token Link:')} ${pc.cyan(pc.underline('https://github.com/settings/personal-access-tokens/new'))}`);
+  console.log(`  1. Resource owner: Select your personal account`);
+  console.log(`  2. Permissions:`);
+  console.log(`     👉 ${pc.bold('Account permissions')}: ${pc.green(pc.bold('Copilot Requests'))} ➔ ${pc.green(pc.bold('Read and write'))}`);
+  console.log(`     👉 ${pc.bold('Repository permissions')}: ${pc.green(pc.bold('Contents'))} ➔ ${pc.green(pc.bold('Read'))}`);
+  console.log(`  3. Click Generate token and copy the ${pc.green(pc.bold('github_pat_...'))} token.\n`);
 
   const countResp = await prompts({
     type: 'number',
@@ -48,8 +53,14 @@ export async function setupWizardCommand(): Promise<void> {
     const tokenResp = await prompts({
       type: 'password',
       name: 'token',
-      message: `Paste GitHub Copilot Token / API Key for Account #${i}:`,
-      validate: (v: string) => (v && v.trim().length > 0 ? true : 'Token cannot be empty'),
+      message: `Paste Fine-Grained Token (github_pat_...) for Account #${i}:`,
+      validate: (v: string) => {
+        if (!v || v.trim().length === 0) return 'Token cannot be empty';
+        if (v.trim().startsWith('ghp_')) {
+          return 'Classic tokens (ghp_) are rejected by Copilot CLI. Please use a Fine-grained PAT (github_pat_)';
+        }
+        return true;
+      },
     });
 
     if (!tokenResp.token) {
@@ -106,10 +117,9 @@ export async function setupWizardCommand(): Promise<void> {
   // Final Summary & Cheatsheet
   console.log(`\n${pc.bold('Setup Complete! Quick Reference Guide')}`);
   console.log('────────────────────────────────────────');
-  console.log(`  ${pc.cyan('cpm code .')}             Open VS Code with active Copilot account`);
-  console.log(`  ${pc.cyan('cpm cursor .')}           Open Cursor with active Copilot account`);
   console.log(`  ${pc.cyan('cpm')}                   Launch interactive visual dashboard`);
-  console.log(`  ${pc.cyan('cpm switch')}             Switch active account`);
-  console.log(`  ${pc.cyan('cpm doctor')}             Check system and account health`);
-  console.log(`  ${pc.cyan('cpm run')}                Start Copilot CLI (requires Copilot CLI installed)\n`);
+  console.log(`  ${pc.cyan('cpm run')}                Start GitHub Copilot CLI with active account`);
+  console.log(`  ${pc.cyan('cpm switch')}             Switch active pooled account`);
+  console.log(`  ${pc.cyan('cpm accounts')}           List pooled accounts & status`);
+  console.log(`  ${pc.cyan('cpm doctor')}             Check system diagnostic & health\n`);
 }

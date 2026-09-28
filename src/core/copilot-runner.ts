@@ -12,6 +12,7 @@ import { logger } from '../logging/logger';
 import { getDb } from '../db/client';
 import { eventsTable } from '../db/schema';
 import { classifyError } from './health-checker';
+import { CopilotSupervisor } from './copilot-supervisor';
 
 export interface RunOptions {
   projectName?: string;
@@ -49,16 +50,21 @@ export class CopilotRunner {
     const isWindows = process.platform === 'win32';
     const binaryName = copilotCmd.trim().split(/\s+/)[0];
     let commandFound = false;
+    let actualCommand = copilotCmd;
+    let actualArgsPrefix: string[] = [];
+
     try {
-      const checkBinary = isWindows ? `where ${binaryName}` : `which ${binaryName}`;
+      const checkBinary = isWindows ? `where.exe ${binaryName}` : `which ${binaryName}`;
       execSync(checkBinary, { stdio: 'ignore', windowsHide: true });
       commandFound = true;
     } catch {
       // If standalone 'copilot' not found, check if 'gh copilot' is available
       if (binaryName === 'copilot') {
         try {
-          execSync('gh copilot --version', { stdio: 'ignore', windowsHide: true });
+          execSync('gh copilot -- --help', { stdio: 'ignore', windowsHide: true });
           commandFound = true;
+          actualCommand = 'gh';
+          actualArgsPrefix = ['copilot'];
         } catch {
           commandFound = false;
         }
@@ -66,14 +72,25 @@ export class CopilotRunner {
     }
 
     if (!commandFound) {
-      throw new Error(
-        `GitHub Copilot CLI ("${copilotCmd}") is not installed or not in your PATH.\n\n` +
-        `To install the official Copilot CLI:\n` +
-        `  1. Install GitHub CLI: winget install --id GitHub.cli\n` +
-        `  2. Install Copilot extension: gh extension install github/gh-copilot\n\n` +
-        `Or to code directly in VS Code with your active account, simply run:\n` +
-        `  cpm code .\n`
-      );
+      console.log('\n  ' + pc.yellow(pc.bold('⚠ GitHub Copilot CLI is not installed.')));
+      console.log('  ' + pc.cyan('⬇ Automatically installing official Copilot CLI (@github/copilot)...') + '\n');
+      try {
+        execSync('npm install -g @github/copilot', { stdio: 'inherit' });
+        const checkBinary = isWindows ? `where.exe ${binaryName}` : `which ${binaryName}`;
+        execSync(checkBinary, { stdio: 'ignore', windowsHide: true });
+        commandFound = true;
+        actualCommand = copilotCmd;
+        actualArgsPrefix = [];
+        console.log('\n  ' + pc.green('✔ GitHub Copilot CLI installed successfully!\n'));
+      } catch (installErr: any) {
+        throw new Error(
+          `GitHub Copilot CLI ("${copilotCmd}") is not installed and automatic installation failed.\n\n` +
+          `To install it manually, run:\n` +
+          `  npm install -g @github/copilot\n\n` +
+          `Or execute directly via GitHub CLI:\n` +
+          `  gh copilot\n`
+        );
+      }
     }
 
     // 1. Determine working directory and project
@@ -145,9 +162,26 @@ export class CopilotRunner {
       metadata: null,
     });
 
-    // 5. Launch Copilot CLI transparently
+    // 5. Launch Copilot CLI (supervised with auto-rotate, or direct)
+    if (config.autoRotateOnRateLimit !== false) {
+      const supervisor = new CopilotSupervisor({
+        command: actualCommand,
+        argsPrefix: actualArgsPrefix,
+        cliArgs,
+        cwd: targetCwd,
+        initialAccount: account,
+        projectId,
+      });
+      return await supervisor.run();
+    }
+
+    const fullArgs = [...actualArgsPrefix, ...cliArgs];
+    const formattedArgs = isWindows
+      ? fullArgs.map((arg) => (arg.includes(' ') && !arg.startsWith('"') ? `"${arg}"` : arg))
+      : fullArgs;
+
     return new Promise<number>((resolve, reject) => {
-      const child = spawn(copilotCmd, cliArgs, {
+      const child = spawn(actualCommand, formattedArgs, {
         cwd: targetCwd,
         env: cleanEnv,
         stdio: 'inherit',
@@ -156,7 +190,7 @@ export class CopilotRunner {
 
       child.on('error', (err: any) => {
         const errorType = classifyError(err.message);
-        logger.error(`Failed to launch ${copilotCmd} (${errorType}): ${err.message}`);
+        logger.error(`Failed to launch ${actualCommand} (${errorType}): ${err.message}`);
 
         db.insert(eventsTable).values({
           accountId: account.id,
@@ -168,7 +202,7 @@ export class CopilotRunner {
         }).run();
 
         if (errorType === 'CLI_ERROR') {
-          reject(new Error(`Failed to start "${copilotCmd}". Ensure GitHub Copilot CLI is installed and in your PATH.`));
+          reject(new Error(`Failed to start "${actualCommand}". Ensure GitHub Copilot CLI is installed and in your PATH.`));
         } else {
           reject(err);
         }
