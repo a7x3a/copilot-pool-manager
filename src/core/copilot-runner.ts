@@ -151,7 +151,7 @@ export class CopilotRunner {
         cwd: targetCwd,
         env: cleanEnv,
         stdio: 'inherit',
-        shell: isWindows,
+        shell: true,
       });
 
       child.on('error', (err: any) => {

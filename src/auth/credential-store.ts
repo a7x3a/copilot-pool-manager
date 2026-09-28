@@ -2,7 +2,7 @@ import fs from 'fs';
 import path from 'path';
 import crypto from 'crypto';
 import { CREDENTIAL_SERVICE_NAME } from '../config/defaults';
-import { getCpmDir } from '../config/config';
+import { getCpmDir, ensureCpmDirectories } from '../config/config';
 import { registerKnownToken } from '../logging/logger';
 
 export interface ICredentialStore {
@@ -14,13 +14,16 @@ export interface ICredentialStore {
 
 /**
  * Windows Credential Manager implementation using @napi-rs/keyring.
- * Directly calls Win32 CredReadW/CredWriteW/CredDeleteW native APIs without child processes or shell commands.
+ * Directly calls Win32 CredReadW/CredWriteW/CredDeleteW native APIs on Windows.
+ * On non-Windows platforms (e.g. Linux CI), cleanly uses the secure local encrypted store.
  */
 export class WindowsCredentialStore implements ICredentialStore {
   private serviceName: string;
+  private isWindows: boolean;
 
   constructor(serviceName: string = CREDENTIAL_SERVICE_NAME) {
     this.serviceName = serviceName;
+    this.isWindows = process.platform === 'win32';
   }
 
   public setCredential(reference: string, secret: string): void {
@@ -28,41 +31,47 @@ export class WindowsCredentialStore implements ICredentialStore {
       throw new Error('Cannot store empty secret');
     }
     registerKnownToken(secret);
-    try {
-      const { Entry } = require('@napi-rs/keyring');
-      const entry = new Entry(this.serviceName, reference);
-      entry.setPassword(secret);
-    } catch (err: any) {
-      // If keyring fails for any system reason, fallback to local encrypted store
-      fallbackStore.setCredential(reference, secret);
+    if (this.isWindows) {
+      try {
+        const { Entry } = require('@napi-rs/keyring');
+        const entry = new Entry(this.serviceName, reference);
+        entry.setPassword(secret);
+        return;
+      } catch (err: any) {
+        // Fallback to local encrypted store if keyring fails
+      }
     }
+    fallbackStore.setCredential(reference, secret);
   }
 
   public getCredential(reference: string): string | null {
-    try {
-      const { Entry } = require('@napi-rs/keyring');
-      const entry = new Entry(this.serviceName, reference);
-      const secret = entry.getPassword();
-      if (secret) {
-        registerKnownToken(secret);
-        return secret;
+    if (this.isWindows) {
+      try {
+        const { Entry } = require('@napi-rs/keyring');
+        const entry = new Entry(this.serviceName, reference);
+        const secret = entry.getPassword();
+        if (secret) {
+          registerKnownToken(secret);
+          return secret;
+        }
+      } catch (err: any) {
+        // Try fallback store
       }
-    } catch (err: any) {
-      // Try fallback store
-      return fallbackStore.getCredential(reference);
     }
     return fallbackStore.getCredential(reference);
   }
 
   public deleteCredential(reference: string): boolean {
     let deletedKeyring = false;
-    try {
-      const { Entry } = require('@napi-rs/keyring');
-      const entry = new Entry(this.serviceName, reference);
-      entry.deletePassword();
-      deletedKeyring = true;
-    } catch {
-      // may not exist in keyring
+    if (this.isWindows) {
+      try {
+        const { Entry } = require('@napi-rs/keyring');
+        const entry = new Entry(this.serviceName, reference);
+        entry.deletePassword();
+        deletedKeyring = true;
+      } catch {
+        // may not exist in keyring
+      }
     }
 
     const deletedFallback = fallbackStore.deleteCredential(reference);
@@ -77,18 +86,21 @@ export class WindowsCredentialStore implements ICredentialStore {
 
 /**
  * Encrypted fallback store using Node.js standard crypto (AES-256-GCM).
- * Never uses PowerShell, shell scripts, or plaintext files.
+ * Secure, cross-platform, and leaves zero plaintext files.
  */
 class EncryptedFileCredentialStore implements ICredentialStore {
   private getStoragePath(): string {
+    ensureCpmDirectories();
     return path.join(getCpmDir(), 'vault.enc');
   }
 
   private getKeyPath(): string {
+    ensureCpmDirectories();
     return path.join(getCpmDir(), 'vault.key');
   }
 
   private getEncryptionKey(): Buffer {
+    ensureCpmDirectories();
     const keyPath = this.getKeyPath();
     if (fs.existsSync(keyPath)) {
       return fs.readFileSync(keyPath);
@@ -97,7 +109,7 @@ class EncryptedFileCredentialStore implements ICredentialStore {
     try {
       fs.writeFileSync(keyPath, newKey, { mode: 0o600 });
     } catch {
-      // best-effort permission setting on windows
+      // best-effort permission setting
     }
     return newKey;
   }
@@ -128,6 +140,7 @@ class EncryptedFileCredentialStore implements ICredentialStore {
   }
 
   private writeVault(data: Record<string, string>): void {
+    ensureCpmDirectories();
     const key = this.getEncryptionKey();
     const iv = crypto.randomBytes(12);
     const cipher = crypto.createCipheriv('aes-256-gcm', key, iv);
