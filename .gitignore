@@ -1,0 +1,13 @@
+node_modules/
+dist/
+.cpm/
+*.db
+*.db-journal
+*.db-shm
+*.db-wal
+.env
+.env.*
+logs/
+*.log
+coverage/
+.drizzle/
