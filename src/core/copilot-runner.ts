@@ -1,5 +1,6 @@
-import { spawn } from 'child_process';
+import { spawn, execSync } from 'child_process';
 import path from 'path';
+import pc from 'picocolors';
 import { Account } from '../types';
 import { AccountManager, accountManager } from './account-manager';
 import { AccountSelector, accountSelector } from './account-selector';
@@ -42,6 +43,38 @@ export class CopilotRunner {
 
   public async run(options: RunOptions = {}): Promise<number> {
     const config = getConfig();
+    const copilotCmd = config.copilotCommand || 'copilot';
+
+    // 0. Pre-flight check: Verify if Copilot CLI binary exists in PATH
+    const isWindows = process.platform === 'win32';
+    const binaryName = copilotCmd.trim().split(/\s+/)[0];
+    let commandFound = false;
+    try {
+      const checkBinary = isWindows ? `where ${binaryName}` : `which ${binaryName}`;
+      execSync(checkBinary, { stdio: 'ignore', windowsHide: true });
+      commandFound = true;
+    } catch {
+      // If standalone 'copilot' not found, check if 'gh copilot' is available
+      if (binaryName === 'copilot') {
+        try {
+          execSync('gh copilot --version', { stdio: 'ignore', windowsHide: true });
+          commandFound = true;
+        } catch {
+          commandFound = false;
+        }
+      }
+    }
+
+    if (!commandFound) {
+      throw new Error(
+        `GitHub Copilot CLI ("${copilotCmd}") is not installed or not in your PATH.\n\n` +
+        `To install the official Copilot CLI:\n` +
+        `  1. Install GitHub CLI: winget install --id GitHub.cli\n` +
+        `  2. Install Copilot extension: gh extension install github/gh-copilot\n\n` +
+        `Or to code directly in VS Code with your active account, simply run:\n` +
+        `  cpm code .\n`
+      );
+    }
 
     // 1. Determine working directory and project
     let targetCwd = options.cwd || process.cwd();
@@ -57,7 +90,6 @@ export class CopilotRunner {
       projectId = proj.id;
       preferredAccount = proj.preferredAccountId;
     } else {
-      // Check if current directory matches any registered project
       const proj = this.projMgr.getProjectByPath(targetCwd);
       if (proj) {
         projectId = proj.id;
@@ -84,7 +116,6 @@ export class CopilotRunner {
     this.accSelector.recordSelection(account, projectId);
 
     // 4. Prepare environment with official Copilot CLI authentication variables
-    // Official GitHub Copilot CLI reads COPILOT_GITHUB_TOKEN, GH_TOKEN, or GITHUB_TOKEN
     const cleanEnv: NodeJS.ProcessEnv = {
       ...process.env,
       COPILOT_GITHUB_TOKEN: token,
@@ -92,7 +123,6 @@ export class CopilotRunner {
       GITHUB_TOKEN: token,
     };
 
-    const copilotCmd = config.copilotCommand || 'copilot';
     const cliArgs = options.cliArgs || [];
     const now = Date.now();
 
@@ -117,8 +147,6 @@ export class CopilotRunner {
 
     // 5. Launch Copilot CLI transparently
     return new Promise<number>((resolve, reject) => {
-      // On Windows, if command is a batch/cmd file or executable, shell: true allows resolution
-      const isWindows = process.platform === 'win32';
       const child = spawn(copilotCmd, cliArgs, {
         cwd: targetCwd,
         env: cleanEnv,
@@ -150,7 +178,6 @@ export class CopilotRunner {
         const exitCode = code ?? 0;
         const exitTime = Date.now();
 
-        // Update account last used time
         this.accMgr.markUsed(account.id);
 
         db.insert(eventsTable).values({

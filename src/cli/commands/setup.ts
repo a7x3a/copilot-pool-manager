@@ -3,7 +3,6 @@ import pc from 'picocolors';
 import { accountManager } from '../../core/account-manager';
 import { projectManager } from '../../core/project-manager';
 import { healthChecker } from '../../core/health-checker';
-import { requestDeviceCode, pollDeviceToken, validateGitHubToken } from '../../auth/github-auth';
 import { logSuccess, logError, logInfo } from '../../terminal/progress';
 
 export async function setupWizardCommand(): Promise<void> {
@@ -13,7 +12,7 @@ export async function setupWizardCommand(): Promise<void> {
   console.log(pc.cyan(`╰${line}╯`) + '\n');
 
   console.log(
-    `CPM pools multiple GitHub Copilot accounts, keeping you coding continuously\nby automatically tracking rate limits, cooldowns, and seamless switching.\n`
+    `CPM pools multiple GitHub Copilot accounts using direct API Keys / Tokens.\nNo browser logins or complex setups required.\n`
   );
 
   // Step 1: Pre-flight Diagnostic
@@ -27,13 +26,14 @@ export async function setupWizardCommand(): Promise<void> {
   console.log('');
 
   // Step 2: Account Pool Setup
-  console.log(pc.bold('Step 2: Add Accounts to Pool'));
+  console.log(pc.bold('Step 2: Add Copilot API Keys / Tokens to Pool'));
   console.log('────────────────────────────────────────');
+  console.log(pc.dim('Generate tokens at: https://github.com/settings/tokens (select "copilot" scope)\n'));
 
   const countResp = await prompts({
     type: 'number',
     name: 'accountCount',
-    message: 'How many GitHub Copilot accounts would you like to set up now?',
+    message: 'How many GitHub Copilot accounts would you like to pool?',
     initial: 2,
     min: 1,
     max: 10,
@@ -42,57 +42,24 @@ export async function setupWizardCommand(): Promise<void> {
   const targetCount = countResp.accountCount || 1;
 
   for (let i = 1; i <= targetCount; i++) {
-    console.log(`\n${pc.cyan(pc.bold(`── Config Account [${i} of ${targetCount}] ──`))}\n`);
+    console.log(`\n${pc.cyan(pc.bold(`── Account [${i} of ${targetCount}] ──`))}`);
 
-    const methodResp = await prompts({
-      type: 'select',
-      name: 'method',
-      message: `How would you like to authenticate Account #${i}?`,
-      choices: [
-        { title: 'Personal Access Token (PAT) - Quick & direct', value: 'token' },
-        { title: 'GitHub OAuth Device Flow - Browser login', value: 'device' },
-      ],
+    const tokenResp = await prompts({
+      type: 'password',
+      name: 'token',
+      message: `Paste GitHub Copilot Token / API Key for Account #${i}:`,
+      validate: (v: string) => (v && v.trim().length > 0 ? true : 'Token cannot be empty'),
     });
 
-    if (!methodResp.method) {
+    if (!tokenResp.token) {
       console.log(pc.dim(`Skipping account #${i}...`));
       continue;
     }
 
-    let token = '';
-
-    if (methodResp.method === 'token') {
-      const tokenResp = await prompts({
-        type: 'password',
-        name: 'token',
-        message: 'Paste your GitHub Personal Access Token (or Copilot token):',
-        validate: (v: string) => (v && v.trim().length > 0 ? true : 'Token cannot be empty'),
-      });
-
-      if (!tokenResp.token) {
-        console.log(pc.dim(`Skipping account #${i}...`));
-        continue;
-      }
-      token = tokenResp.token.trim();
-    } else {
-      try {
-        logInfo('Requesting device authorization code from GitHub...');
-        const devCode = await requestDeviceCode();
-
-        console.log('\n' + pc.bold('GitHub Device Authorization:'));
-        console.log(`  1. Open: ${pc.cyan(pc.underline(devCode.verification_uri))}`);
-        console.log(`  2. Enter code: ${pc.green(pc.bold(devCode.user_code))}\n`);
-
-        logInfo('Waiting for browser authentication...');
-        token = await pollDeviceToken(devCode.device_code, devCode.interval, devCode.expires_in);
-      } catch (err: any) {
-        logError(`Device authentication failed: ${err.message}`);
-        continue;
-      }
-    }
+    const token = tokenResp.token.trim();
 
     try {
-      logInfo(`Validating credentials with GitHub...`);
+      logInfo(`Validating API key with GitHub...`);
       const acc = await accountManager.addAccount({ token });
       logSuccess(`Account #${acc.id} (@${acc.githubUsername}) registered into the pool!`);
       if (i === 1) {
@@ -138,10 +105,10 @@ export async function setupWizardCommand(): Promise<void> {
   // Final Summary & Cheatsheet
   console.log(`\n${pc.bold('Setup Complete! Quick Reference Guide')}`);
   console.log('────────────────────────────────────────');
-  console.log(`  ${pc.cyan('cpm')}                   Launch interactive dashboard`);
-  console.log(`  ${pc.cyan('cpm run')}               Start Copilot CLI in current project`);
-  console.log(`  ${pc.cyan('cpm switch [account]')}   Manually switch active account`);
-  console.log(`  ${pc.cyan('cpm ide <code|cursor>')}  Launch IDE with active Copilot account`);
-  console.log(`  ${pc.cyan('cpm doctor')}            Check system and account health`);
-  console.log(`  ${pc.cyan('cpm usage')}             View observable usage & limits\n`);
+  console.log(`  ${pc.cyan('cpm code .')}             Open VS Code with active Copilot account`);
+  console.log(`  ${pc.cyan('cpm cursor .')}           Open Cursor with active Copilot account`);
+  console.log(`  ${pc.cyan('cpm')}                   Launch interactive visual dashboard`);
+  console.log(`  ${pc.cyan('cpm switch')}             Switch active account`);
+  console.log(`  ${pc.cyan('cpm doctor')}             Check system and account health`);
+  console.log(`  ${pc.cyan('cpm run')}                Start Copilot CLI (requires Copilot CLI installed)\n`);
 }

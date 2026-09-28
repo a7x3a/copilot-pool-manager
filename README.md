@@ -23,21 +23,49 @@ npm link
 ```powershell
 cpm setup
 ```
-Follow the interactive wizard:
-* Choose how many accounts to pool (e.g. 2 or 3).
-* Authenticate each account with either a **Personal Access Token** or via your browser (**Device Flow**).
+The wizard will ask you how many accounts to pool. Simply paste each account's **GitHub Copilot Token / API Key** (no OAuth or browser logins needed).
 
-### 3. Start Coding!
+> **How to get your API key / token:**
+> 1. Go to [github.com/settings/tokens](https://github.com/settings/tokens)
+> 2. Click **Generate new token (classic)**
+> 3. Select the `copilot` and `repo` scopes
+> 4. Copy the generated token (`ghp_...`) and paste it into CPM.
+
+### 3. Open VS Code with Your Active Account
 ```powershell
-cpm run
+cpm code .
 ```
-CPM automatically picks the best available account and starts Copilot CLI.
+CPM injects your authenticated Copilot session and launches VS Code!
+
+---
+
+## 💻 VS Code & Cursor Integration
+
+CPM makes it effortless to launch your editor with the active pooled Copilot account:
+
+```powershell
+# Open VS Code in current directory
+cpm code .
+
+# Open Cursor in current directory
+cpm cursor .
+
+# Or launch any custom editor
+cpm ide windsurf .
+cpm ide nvim .
+```
+
+### How `cpm code .` works:
+1. CPM checks your account pool and picks the best available account (skipping any in cooldown).
+2. It retrieves the API key securely from **Windows Credential Manager**.
+3. It spawns VS Code passing `COPILOT_GITHUB_TOKEN` directly into VS Code's environment.
+4. VS Code's Copilot extension automatically authenticates with that account!
 
 ---
 
 ## 🖥️ Terminal Dashboard
 
-Just type `cpm` from any terminal:
+Type `cpm` from any terminal to open the live visual dashboard:
 
 ```powershell
 cpm
@@ -74,52 +102,48 @@ ACTIONS / COMMANDS
   [Q] Quit                  (/quit)
 ```
 
+You can press **1-8** or type slash commands like **`/switch`**, **`/run`**, **`/doctor`**, or **`/usage`**.
+
 ---
 
 ## ⌨️ Command Cheatsheet
 
 | Command | What it does |
 |---|---|
+| `cpm code .` | Launches **VS Code** with the active Copilot account |
+| `cpm cursor .` | Launches **Cursor** with the active Copilot account |
 | `cpm` | Opens the interactive visual dashboard |
-| `cpm setup` | First-time setup wizard to connect accounts |
-| `cpm run` | Launches official Copilot CLI with the active account |
-| `cpm run <project>` | Jumps to a project folder and runs Copilot |
+| `cpm setup` | First-time setup wizard to connect account API keys |
 | `cpm switch` | Interactively switch your active account |
-| `cpm switch <id>` | Instantly switch to a specific account (e.g. `cpm switch 02`) |
-| `cpm ide code .` | Launches **VS Code** with the active Copilot account |
-| `cpm ide cursor .` | Launches **Cursor** with the active Copilot account |
-| `cpm doctor` | Self-diagnostic check (Node, Copilot CLI, Windows Vault, DB) |
+| `cpm switch <id>` | Instantly switch to an account (e.g. `cpm switch 02`) |
+| `cpm doctor` | Self-diagnostic check (Node, Windows Vault, DB) |
 | `cpm accounts` | Lists all accounts, statuses, and cooldowns |
+| `cpm run` | Launches official Copilot CLI in your terminal |
+| `cpm run <project>` | Jumps to a project folder and runs Copilot |
 | `cpm project add` | Saves a folder as a named project |
 | `cpm usage` | Shows observed token counts & sessions |
 
 ---
 
-## 💻 IDE Integration (VS Code, Cursor, JetBrains)
+## 🛠️ Optional: Using Copilot in Terminal (`cpm run`)
 
-CPM can launch your favorite IDE with the pooled Copilot token automatically injected:
+If you want to use Copilot directly in your terminal via `cpm run`, install the official GitHub Copilot CLI extension:
 
 ```powershell
-# Open VS Code
-cpm ide code .
+# 1. Install GitHub CLI (if you don't have it)
+winget install --id GitHub.cli
 
-# Open Cursor
-cpm ide cursor .
-
-# Open Windsurf
-cpm ide windsurf .
+# 2. Install Copilot extension
+gh extension install github/gh-copilot
 ```
 
-Or export the token into your current PowerShell session:
-```powershell
-cpm env powershell
-```
+*(Note: If you only code inside VS Code with `cpm code .`, you do not need to install the terminal CLI!)*
 
 ---
 
 ## 🔄 Automatic Rate-Limit Switching
 
-You don't have to worry about running into rate limits:
+Never worry about rate limits interrupting your workflow:
 
 1. **Detection**: If GitHub returns a rate limit (HTTP 429), CPM puts that account on a temporary cooldown (e.g. 15 minutes).
 2. **Auto-Switch**: CPM immediately switches to your next available, healthy account.
@@ -147,4 +171,4 @@ npm test
 
 ## 📄 License
 
-[MIT](LICENSE) © 2026 Copilot Pool Manager Contributors
+[MIT](LICENSE) © 2026 Ahmad

@@ -155,13 +155,27 @@ program
 
 // IDE launcher command
 program
-  .command('ide [editor]')
+  .command('ide [editor] [args...]')
   .description('Launch an IDE (code, cursor, nvim, etc.) with active Copilot account credentials')
   .allowUnknownOption()
-  .action(async (editor: string = 'code') => {
-    const rawArgs = process.argv.slice(3);
-    const extraArgs = rawArgs.length > 1 ? rawArgs.slice(1) : ['.'];
-    await ideCommand(editor, extraArgs);
+  .action(async (editor: string = 'code', args: string[] = []) => {
+    await ideCommand(editor, args.length > 0 ? args : ['.']);
+  });
+
+program
+  .command('code [args...]')
+  .description('Launch VS Code directly with active Copilot account credentials')
+  .allowUnknownOption()
+  .action(async (args: string[] = []) => {
+    await ideCommand('code', args.length > 0 ? args : ['.']);
+  });
+
+program
+  .command('cursor [args...]')
+  .description('Launch Cursor directly with active Copilot account credentials')
+  .allowUnknownOption()
+  .action(async (args: string[] = []) => {
+    await ideCommand('cursor', args.length > 0 ? args : ['.']);
   });
 
 // Environment variable output command

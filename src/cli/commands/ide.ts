@@ -1,6 +1,7 @@
 import { spawn } from 'child_process';
 import pc from 'picocolors';
 import { accountSelector } from '../../core/account-selector';
+import { accountManager } from '../../core/account-manager';
 import { tokenManager } from '../../auth/token-manager';
 import { logSuccess, logError, logInfo } from '../../terminal/progress';
 
@@ -14,7 +15,12 @@ export async function ideCommand(ideName: string = 'code', extraArgs: string[] =
       return;
     }
 
-    logInfo(`Launching ${pc.cyan(ideName)} with Copilot account: #${account.id} @${account.githubUsername}`);
+    // Set account as active and update last used
+    accountManager.setActiveAccount(account.id);
+    accountManager.markUsed(account.id);
+
+    const args = extraArgs.length > 0 ? extraArgs : ['.'];
+    logInfo(`Launching ${pc.cyan(ideName)} ${args.join(' ')} with Copilot account: #${account.id} @${account.githubUsername}`);
 
     const env = {
       ...process.env,
@@ -24,15 +30,15 @@ export async function ideCommand(ideName: string = 'code', extraArgs: string[] =
     };
 
     const isWindows = process.platform === 'win32';
-    const child = spawn(ideName, extraArgs, {
-      stdio: 'inherit',
+    const child = spawn(ideName, args, {
+      stdio: 'ignore',
       shell: isWindows,
       env,
       detached: true,
     });
 
     child.unref();
-    logSuccess(`Spawned ${ideName} in background with authenticated Copilot session.`);
+    logSuccess(`Spawned ${ideName} with authenticated Copilot environment.`);
   } catch (err: any) {
     logError(`Failed to launch IDE: ${err.message}`);
   }
