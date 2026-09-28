@@ -14,19 +14,20 @@ export const colors = {
   status(status: AccountStatus): string {
     switch (status) {
       case 'READY':
-        return pc.green(status);
+        return pc.green('● READY');
       case 'ACTIVE':
-        return pc.cyan(pc.bold(status));
-      case 'LIMITED':
+        return pc.cyan(pc.bold('⚡ ACTIVE'));
       case 'COOLDOWN':
-        return pc.yellow(status);
+        return pc.yellow('⏳ COOLDOWN');
+      case 'LIMITED':
+        return pc.yellow('⚠️  LIMITED');
       case 'AUTH_ERROR':
-        return pc.red(pc.bold(status));
+        return pc.red(pc.bold('✖ AUTH_ERROR'));
       case 'DISABLED':
       case 'OFFLINE':
-        return pc.gray(status);
+        return pc.gray('○ OFFLINE');
       default:
-        return pc.dim(status);
+        return pc.dim(`? ${status}`);
     }
   },
 };

@@ -85,7 +85,7 @@ ACCOUNTS POOL
  03   backup-user         COOLDOWN     08:15       25 min ago
 
 CURRENT PROJECT
- QTrade (D:\Projects\QTrade)
+ MyProject (C:\Projects\MyProject)
 
 ACTIVE ACCOUNT
  #01 work-user (ACTIVE)

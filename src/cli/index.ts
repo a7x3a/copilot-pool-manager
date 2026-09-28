@@ -27,6 +27,9 @@ program
       onRunCopilot: async () => {
         await runCommand();
       },
+      onCode: async () => {
+        await ideCommand('code', ['.']);
+      },
       onAccounts: async () => {
         listAccountsCommand();
       },

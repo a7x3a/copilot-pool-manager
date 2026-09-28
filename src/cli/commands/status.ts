@@ -4,6 +4,7 @@ import { projectManager } from '../../core/project-manager';
 import { cooldownManager } from '../../core/cooldown-manager';
 import { renderTable, formatTimeAgo } from '../../terminal/tables';
 import { colors } from '../../terminal/colors';
+import { showBanner } from '../../terminal/progress';
 import { Account } from '../../types';
 
 export function statusCommand(): void {
@@ -17,20 +18,24 @@ export function statusCommand(): void {
   const limited = accounts.filter((a) => a.status === 'LIMITED' || a.status === 'COOLDOWN').length;
   const errored = accounts.filter((a) => a.status === 'AUTH_ERROR').length;
 
-  console.log('\n' + pc.bold('CPM SYSTEM STATUS') + '\n');
+  console.log(showBanner());
+  console.log(pc.bold('📊 SYSTEM OVERVIEW'));
+  console.log(pc.dim('────────────────────────────────────────────────────────────'));
 
-  console.log(`  Accounts:     ${pc.bold(String(total))}`);
-  console.log(`  Available:    ${pc.green(String(available))}`);
-  console.log(`  Active:       ${activeAccount ? pc.cyan(activeAccount.githubUsername + ` (#${activeAccount.id})`) : pc.dim('none')}`);
-  console.log(`  Limited:      ${limited > 0 ? pc.yellow(String(limited)) : '0'}`);
-  console.log(`  Auth Error:   ${errored > 0 ? pc.red(String(errored)) : '0'}`);
-  console.log(`  Current Dir:  ${pc.dim(currentDir)}`);
-  console.log(`  Project:      ${currentProject ? pc.cyan(currentProject.name) : pc.dim('(no project binding)')}\n`);
+  console.log(`  👥 Total Accounts : ${pc.bold(String(total))}`);
+  console.log(`  ✔  Available      : ${pc.green(String(available))}`);
+  console.log(`  ⚡ Active Account : ${activeAccount ? pc.cyan(pc.bold(`@${activeAccount.githubUsername} (#${activeAccount.id})`)) : pc.dim('none')}`);
+  console.log(`  ⏳ Cooldown/Limit : ${limited > 0 ? pc.yellow(String(limited)) : '0'}`);
+  console.log(`  ✖  Auth Errors    : ${errored > 0 ? pc.red(String(errored)) : '0'}`);
+  console.log(`  📁 Active Project : ${currentProject ? pc.cyan(currentProject.name) : pc.dim('(no project binding)')}`);
+  console.log(`  📂 Directory      : ${pc.dim(currentDir)}\n`);
 
   if (accounts.length > 0) {
+    console.log(pc.bold('👥 ACCOUNTS POOL'));
+    console.log(pc.dim('────────────────────────────────────────────────────────────'));
     const tableStr = renderTable<Account>(accounts, [
       { header: 'ID', render: (a) => a.id },
-      { header: 'ACCOUNT', render: (a) => a.githubUsername },
+      { header: 'ACCOUNT', render: (a) => (a.status === 'ACTIVE' ? pc.cyan(pc.bold(`★ ${a.githubUsername}`)) : a.githubUsername) },
       { header: 'STATUS', render: (a) => colors.status(a.status) },
       {
         header: 'COOLDOWN',

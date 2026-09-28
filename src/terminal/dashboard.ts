@@ -21,10 +21,10 @@ export function renderDashboardView(): string {
 
   const accountsTableOutput = renderTable<Account>(accounts, [
     { header: 'ID', render: (a) => a.id },
-    { header: 'ACCOUNT', render: (a) => a.githubUsername },
+    { header: 'ACCOUNT', render: (a) => (a.status === 'ACTIVE' ? pc.bold(pc.cyan(`★ ${a.githubUsername}`)) : a.githubUsername) },
     { header: 'STATUS', render: (a) => colors.status(a.status) },
     {
-      header: 'USAGE',
+      header: 'USAGE / COOLDOWN',
       render: (a) => {
         if (cooldownManager.isCoolingDown(a)) {
           return pc.yellow(cooldownManager.formatCooldown(a));
@@ -37,40 +37,38 @@ export function renderDashboardView(): string {
 
   const output: string[] = [
     showBanner(),
-    '',
-    pc.bold('ACCOUNTS POOL'),
-    '',
+    pc.bold('👥 ACCOUNTS POOL'),
+    pc.dim('────────────────────────────────────────────────────────────'),
     accountsTableOutput,
     '',
-    pc.bold('CURRENT PROJECT'),
-    '',
+    pc.bold('📁 CURRENT PROJECT'),
+    pc.dim('────────────────────────────────────────────────────────────'),
     currentProject
-      ? ` ${pc.cyan(currentProject.name)}\n ${pc.dim(currentProject.path)}`
-      : ` ${pc.dim('(No project matched current directory: ' + currentDir + ')')}`,
+      ? `  ${pc.cyan(pc.bold(currentProject.name))}  ${pc.dim('→')}  ${pc.dim(currentProject.path)}`
+      : `  ${pc.dim('(No project matched current directory: ' + currentDir + ')')}`,
     '',
-    pc.bold('ACTIVE ACCOUNT'),
-    '',
+    pc.bold('⚡ ACTIVE SESSION'),
+    pc.dim('────────────────────────────────────────────────────────────'),
     activeAccount
-      ? ` #${activeAccount.id} ${pc.cyan(activeAccount.githubUsername)}\n Status: ${colors.status(activeAccount.status)}`
-      : ` ${pc.dim('(No account currently active)')}`,
+      ? `  #${activeAccount.id} ${pc.cyan(pc.bold(activeAccount.githubUsername))}  ${colors.status(activeAccount.status)}  ${pc.dim('| Plan: ' + activeAccount.copilotPlan)}`
+      : `  ${pc.yellow('⚠ No account currently active. Press [3] to select an account.')}`,
     '',
-    pc.bold('SYSTEM'),
+    pc.bold('📊 POOL STATUS'),
+    pc.dim('────────────────────────────────────────────────────────────'),
+    `  Accounts: ${pc.bold(String(total))}  │  Available: ${pc.green(String(available))}  │  Active: ${pc.cyan(String(active))}  │  Limited: ${limited > 0 ? pc.yellow(String(limited)) : '0'}`,
     '',
-    ` Accounts:       ${pc.bold(String(total))}`,
-    ` Available:      ${pc.green(String(available))}`,
-    ` Active:         ${pc.cyan(String(active))}`,
-    ` Limited:        ${limited > 0 ? pc.yellow(String(limited)) : '0'}`,
-    '',
-    pc.bold('ACTIONS / COMMANDS'),
-    `  ${pc.cyan('[1]')} Run Copilot           ${pc.dim('(/run)')}`,
-    `  ${pc.cyan('[2]')} Accounts Pool         ${pc.dim('(/accounts)')}`,
-    `  ${pc.cyan('[3]')} Switch Account        ${pc.dim('(/switch)')}`,
-    `  ${pc.cyan('[4]')} Usage & Limits        ${pc.dim('(/usage)')}`,
-    `  ${pc.cyan('[5]')} Projects              ${pc.dim('(/projects)')}`,
-    `  ${pc.cyan('[6]')} Health Doctor         ${pc.dim('(/doctor)')}`,
-    `  ${pc.cyan('[7]')} Logs & Events         ${pc.dim('(/logs)')}`,
-    `  ${pc.cyan('[8]')} Setup Wizard          ${pc.dim('(/setup)')}`,
-    `  ${pc.yellow('[Q]')} Quit                  ${pc.dim('(/quit)')}`,
+    pc.bold('⚡ ACTIONS & COMMANDS'),
+    pc.dim('────────────────────────────────────────────────────────────'),
+    `  ${pc.cyan('[1]')} 🚀 Run Copilot CLI     ${pc.dim('(/run)')}`,
+    `  ${pc.cyan('[2]')} 💻 Launch VS Code      ${pc.dim('(/code)')}`,
+    `  ${pc.cyan('[3]')} 🔄 Switch Account      ${pc.dim('(/switch)')}`,
+    `  ${pc.cyan('[4]')} 👥 Accounts Pool       ${pc.dim('(/accounts)')}`,
+    `  ${pc.cyan('[5]')} 📊 Usage & Limits      ${pc.dim('(/usage)')}`,
+    `  ${pc.cyan('[6]')} 📁 Projects            ${pc.dim('(/projects)')}`,
+    `  ${pc.cyan('[7]')} 🩺 Health Doctor       ${pc.dim('(/doctor)')}`,
+    `  ${pc.cyan('[8]')} 📜 Event Logs          ${pc.dim('(/logs)')}`,
+    `  ${pc.cyan('[9]')} ⚙️  Setup Wizard        ${pc.dim('(/setup)')}`,
+    `  ${pc.yellow('[Q]')} 🚪 Quit                ${pc.dim('(/quit)')}`,
     '',
   ];
 
@@ -79,6 +77,7 @@ export function renderDashboardView(): string {
 
 export interface DashboardHandlers {
   onRunCopilot: () => Promise<void>;
+  onCode: () => Promise<void>;
   onAccounts: () => Promise<void>;
   onSwitch: () => Promise<void>;
   onUsage: () => Promise<void>;
@@ -95,11 +94,11 @@ export async function runInteractiveDashboard(handlers: DashboardHandlers): Prom
   if (initialAccounts.length === 0) {
     console.clear();
     console.log(showBanner());
-    console.log('\n' + pc.yellow('! No GitHub Copilot accounts found in your pool.\n'));
+    console.log('\n  ' + pc.yellow('⚠ No GitHub Copilot accounts found in your pool.\n'));
     const setupPrompt = await prompts({
       type: 'confirm',
       name: 'startSetup',
-      message: 'Would you like to run the Setup Wizard now to add accounts?',
+      message: 'Would you like to run the Setup Wizard now to add your API Key / Token?',
       initial: true,
     });
 
@@ -117,14 +116,14 @@ export async function runInteractiveDashboard(handlers: DashboardHandlers): Prom
     const response = await prompts({
       type: 'text',
       name: 'action',
-      message: 'Select an option or type a command (e.g. 1 or /run):',
+      message: 'Select an option or type a command (e.g. 2 or /code):',
     });
 
     const choice = (response.action || '').trim().toLowerCase();
 
     if (choice === 'q' || choice === 'quit' || choice === 'exit' || choice === '/quit' || choice === '/exit') {
       running = false;
-      console.log('Goodbye!');
+      console.log('\n  ' + pc.cyan('👋 Thanks for using CPM! Happy coding.') + '\n');
       break;
     }
 
@@ -135,8 +134,8 @@ export async function runInteractiveDashboard(handlers: DashboardHandlers): Prom
           await handlers.onRunCopilot();
           break;
         case '2':
-        case '/accounts':
-          await handlers.onAccounts();
+        case '/code':
+          await handlers.onCode();
           await pausePrompt();
           break;
         case '3':
@@ -145,37 +144,42 @@ export async function runInteractiveDashboard(handlers: DashboardHandlers): Prom
           await pausePrompt();
           break;
         case '4':
+        case '/accounts':
+          await handlers.onAccounts();
+          await pausePrompt();
+          break;
+        case '5':
         case '/usage':
           await handlers.onUsage();
           await pausePrompt();
           break;
-        case '5':
+        case '6':
         case '/projects':
           await handlers.onProjects();
           await pausePrompt();
           break;
-        case '6':
+        case '7':
         case '/doctor':
         case '/health':
           await handlers.onHealth();
           await pausePrompt();
           break;
-        case '7':
+        case '8':
         case '/logs':
           await handlers.onLogs();
           await pausePrompt();
           break;
-        case '8':
+        case '9':
         case '/setup':
           await handlers.onSetup();
           await pausePrompt();
           break;
         case '/help':
-          console.log('\nCommands: /run, /accounts, /switch, /usage, /projects, /doctor, /logs, /setup, /quit\n');
+          console.log('\nCommands: /run, /code, /switch, /accounts, /usage, /projects, /doctor, /logs, /setup, /quit\n');
           await pausePrompt();
           break;
         default:
-          console.log(pc.yellow('Invalid selection. Type 1-8, /command, or Q to quit.'));
+          console.log(pc.yellow('Invalid selection. Type 1-9, /command, or Q to quit.'));
           await pausePrompt();
           break;
       }

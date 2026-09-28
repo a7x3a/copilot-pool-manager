@@ -429,8 +429,8 @@ ACCOUNTS
 
 CURRENT PROJECT
 
- QTrade
- D:\Projects\QTrade
+ MyProject
+ C:\Projects\MyProject
 
 
 ACTIVE ACCOUNT
@@ -669,22 +669,22 @@ Example:
 
 ```text
 Project name:
-QTrade
+MyProject
 
 Project path:
-D:\Projects\QTrade
+C:\Projects\MyProject
 ```
 
 Then:
 
 ```powershell
-cpm run QTrade
+cpm run MyProject
 ```
 
 automatically:
 
 ```text
-cd D:\Projects\QTrade
+cd C:\Projects\MyProject
 ```
 
 and starts Copilot.
@@ -801,10 +801,9 @@ Accounts
 04 github-user-4    ✗ authentication required
 
 Projects
-
-QTrade              ✓
-Renwar              ✓
-QAI                 ✓
+DemoApp             ✓
+WebPortal           ✓
+ApiBackend          ✓
 ```
 
 ---
@@ -819,7 +818,7 @@ Example:
 2026-09-28 23:12:01
 ACCOUNT_SELECTED
 account=02
-project=QTrade
+project=DemoApp
 
 2026-09-28 23:47:22
 RATE_LIMIT
@@ -832,7 +831,7 @@ account=02
 2026-09-28 23:47:23
 ACCOUNT_SELECTED
 account=01
-project=QTrade
+project=DemoApp
 ```
 
 Never log credentials.
@@ -1049,10 +1048,10 @@ to register a project.
 I can run:
 
 ```powershell
-cpm run QTrade
+cpm run DemoApp
 ```
 
-and have CPM launch the official Copilot CLI in the QTrade project using the selected authenticated account.
+and have CPM launch the official Copilot CLI in the DemoApp project using the selected authenticated account.
 
 The terminal dashboard must clearly show:
 

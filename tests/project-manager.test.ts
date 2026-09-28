@@ -16,7 +16,7 @@ describe('Project Manager', () => {
     process.env.CPM_DB_PATH = path.join(tempDir, 'test.db');
     initializeDatabase(process.env.CPM_DB_PATH);
 
-    sampleProjectDir = path.join(tempDir, 'QTrade');
+    sampleProjectDir = path.join(tempDir, 'DemoApp');
     fs.mkdirSync(sampleProjectDir);
 
     mgr = new ProjectManager();
@@ -32,23 +32,23 @@ describe('Project Manager', () => {
   });
 
   it('should add, get, list, and remove projects', () => {
-    const proj = mgr.addProject('QTrade', sampleProjectDir, 'AUTO');
-    expect(proj.name).toBe('QTrade');
+    const proj = mgr.addProject('DemoApp', sampleProjectDir, 'AUTO');
+    expect(proj.name).toBe('DemoApp');
     expect(proj.path.toLowerCase()).toBe(path.resolve(sampleProjectDir).toLowerCase());
 
-    const retrieved = mgr.getProject('QTrade');
+    const retrieved = mgr.getProject('DemoApp');
     expect(retrieved?.id).toBe(proj.id);
 
     const byPath = mgr.getProjectByPath(sampleProjectDir);
-    expect(byPath?.name).toBe('QTrade');
+    expect(byPath?.name).toBe('DemoApp');
 
     const all = mgr.listProjects();
     expect(all.length).toBe(1);
 
-    const removed = mgr.removeProject('QTrade');
+    const removed = mgr.removeProject('DemoApp');
     expect(removed).toBe(true);
 
-    expect(mgr.getProject('QTrade')).toBeNull();
+    expect(mgr.getProject('DemoApp')).toBeNull();
   });
 
   it('should reject non-existent directory paths', () => {
