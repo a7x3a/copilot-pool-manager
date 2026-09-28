@@ -26,9 +26,10 @@ export async function setupWizardCommand(): Promise<void> {
   console.log('');
 
   // Step 2: Account Pool Setup
-  console.log(pc.bold('Step 2: Add Copilot API Keys / Tokens to Pool'));
+  console.log(pc.bold('Step 2: Add Accounts to Pool'));
   console.log('────────────────────────────────────────');
-  console.log(pc.dim('Generate tokens at: https://github.com/settings/tokens (select "copilot" scope)\n'));
+  console.log(`  ${pc.bold('Note:')} Use ${pc.green(pc.bold('Generate new token (classic)'))} at ${pc.cyan(pc.underline('https://github.com/settings/tokens'))}`);
+  console.log(`  Scopes needed: ${pc.bold('repo')} (code context) & ${pc.bold('read:user')} (profile identity).\n`);
 
   const countResp = await prompts({
     type: 'number',

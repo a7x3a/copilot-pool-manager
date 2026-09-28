@@ -25,11 +25,16 @@ cpm setup
 ```
 The wizard will ask you how many accounts to pool. Simply paste each account's **GitHub Copilot Token / API Key** (no OAuth or browser logins needed).
 
-> **How to get your API key / token:**
-> 1. Go to [github.com/settings/tokens](https://github.com/settings/tokens)
-> 2. Click **Generate new token (classic)**
-> 3. Select the `copilot` and `repo` scopes
-> 4. Copy the generated token (`ghp_...`) and paste it into CPM.
+> **🔑 How to generate your token in 30 seconds:**
+> 1. Go to: [github.com/settings/tokens](https://github.com/settings/tokens)
+> 2. Click: **Generate new token** ➔ **Generate new token (classic)**  
+>    *(Note: You must choose **Classic**. GitHub's fine-grained tokens cannot access Copilot).*
+> 3. Enter a note: `cpm`
+> 4. Check these scopes:
+>    * ✔ **`repo`** — Required by Copilot to read codebase files and provide accurate context.
+>    * ✔ **`read:user`** — Allows CPM to identify your account handle.
+>    * ✔ **`copilot`** — If displayed for your account or organization.
+> 5. Click **Generate token** and copy the `ghp_...` key into CPM.
 
 ### 3. Open VS Code with Your Active Account
 ```powershell

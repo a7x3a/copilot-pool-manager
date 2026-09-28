@@ -5,14 +5,23 @@ import { tokenManager } from '../../auth/token-manager';
 import { logSuccess, logError, logInfo } from '../../terminal/progress';
 
 export async function addAccountCommand(): Promise<void> {
-  console.log('\n' + pc.bold('Add GitHub Copilot Account (API Key / Token)') + '\n');
-  console.log(pc.dim('Paste your GitHub Personal Access Token (PAT) or Copilot API Key.'));
-  console.log(pc.dim('Need a token? Generate one at: https://github.com/settings/tokens (with "copilot" / "repo" access)\n'));
+  console.log('\n  ' + pc.cyan(pc.bold('🔑 Add GitHub Copilot Account (Token / API Key)')));
+  console.log('  ' + pc.dim('────────────────────────────────────────────────────────────'));
+  console.log(`  ${pc.bold('Important:')} Use a ${pc.green(pc.bold('Classic Token'))}. GitHub does not support Copilot on fine-grained tokens.`);
+  console.log(`\n  ${pc.bold('How to generate your token in 30 seconds:')}`);
+  console.log(`  1. Open: ${pc.cyan(pc.underline('https://github.com/settings/tokens'))}`);
+  console.log(`  2. Click: ${pc.bold('Generate new token')} ➔ ${pc.green(pc.bold('Generate new token (classic)'))}`);
+  console.log(`  3. Name: ${pc.dim('cpm')}`);
+  console.log(`  4. Check these required scopes:`);
+  console.log(`     ${pc.green('✔')} ${pc.bold('repo')}       ${pc.dim('(Allows Copilot to read codebase context & files)')}`);
+  console.log(`     ${pc.green('✔')} ${pc.bold('read:user')}  ${pc.dim('(Allows CPM to verify your GitHub account)')}`);
+  console.log(`     ${pc.green('✔')} ${pc.bold('copilot')}    ${pc.dim('(If shown under your account or organization)')}`);
+  console.log(`  5. Click ${pc.bold('Generate token')} and paste below.\n`);
 
   const tokenResponse = await prompts({
     type: 'password',
     name: 'token',
-    message: 'Enter GitHub Copilot Token / API Key:',
+    message: 'Paste your GitHub Classic Token (ghp_...):',
     validate: (v: string) => (v && v.trim().length > 0 ? true : 'Token cannot be empty'),
   });
 
