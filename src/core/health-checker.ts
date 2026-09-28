@@ -19,6 +19,8 @@ export function classifyError(errorOutput: string, exitCode?: number): ErrorClas
     lower.includes('quota exceeded') ||
     lower.includes('exceeded your monthly quota') ||
     lower.includes('exceeded your quota') ||
+    lower.includes('payment required') ||
+    lower.includes('status 402') ||
     lower.includes('too many requests') ||
     lower.includes('status 429') ||
     lower.includes('429 too many') ||
@@ -36,7 +38,10 @@ export function classifyError(errorOutput: string, exitCode?: number): ErrorClas
     lower.includes('token expired') ||
     lower.includes('copilot subscription') ||
     lower.includes('requires copilot') ||
-    lower.includes('not authorized')
+    lower.includes('not authorized') ||
+    lower.includes('classic personal access tokens') ||
+    lower.includes('not supported by copilot') ||
+    lower.includes('not authenticated')
   ) {
     return 'AUTH_ERROR';
   }

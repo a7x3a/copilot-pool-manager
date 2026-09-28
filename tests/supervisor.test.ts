@@ -139,4 +139,63 @@ describe('CopilotSupervisor Real-Time Auto-Rotation', () => {
     expect(cooldownManager.isCoolingDown(updatedAcc1)).toBe(true);
     expect(updatedAcc1.status).toBe('COOLDOWN');
   });
+
+  it('detects quota exceeded in .copilot/logs and auto-rotates', async () => {
+    // Create mock logs dir in tempDir and point USERPROFILE there
+    const mockLogsDir = path.join(tempDir, '.copilot', 'logs');
+    fs.mkdirSync(mockLogsDir, { recursive: true });
+    process.env.USERPROFILE = tempDir;
+
+    const logMockBin = path.join(tempDir, 'mock-log-quota.js');
+    fs.writeFileSync(
+      logMockBin,
+      `
+      const fs = require('fs');
+      const path = require('path');
+      const token = process.env.COPILOT_GITHUB_TOKEN || '';
+      if (token.includes('acc1')) {
+        const logFile = path.join(${JSON.stringify(mockLogsDir)}, 'process-' + Date.now() + '-99999.log');
+        fs.writeFileSync(
+          logFile,
+          '2026-09-28T21:52:06.005Z [ERROR] [rust:copilot_runtime::session::native_message_turn] Payment required error: 402 You have exceeded your monthly quota\\n'
+        );
+        // Sleep to simulate running interactive session waiting to be killed by supervisor
+        setTimeout(() => {}, 5000);
+      } else {
+        process.stdout.write("Success on rotated account!\\n");
+        process.exit(0);
+      }
+      `,
+      'utf8'
+    );
+
+    const acc1 = await accountManager.addAccount({
+      githubUsername: 'user-one',
+      token: 'ghp_token_acc1_12345',
+      copilotPlan: 'individual',
+    });
+
+    const acc2 = await accountManager.addAccount({
+      githubUsername: 'user-two',
+      token: 'ghp_token_acc2_67890',
+      copilotPlan: 'business',
+    });
+
+    accountManager.setActiveAccount(acc1.id);
+
+    const supervisor = new CopilotSupervisor({
+      command: `node "${logMockBin}"`,
+      cliArgs: ['-p', 'test'],
+      cwd: tempDir,
+      initialAccount: acc1,
+    });
+
+    const exitCode = await supervisor.run();
+    expect(exitCode).toBe(0);
+
+    const updatedAcc1 = accountManager.getAccount(acc1.id)!;
+    expect(cooldownManager.isCoolingDown(updatedAcc1)).toBe(true);
+    expect(updatedAcc1.status).toBe('COOLDOWN');
+  });
 });
+
