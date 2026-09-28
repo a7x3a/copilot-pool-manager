@@ -151,24 +151,7 @@ Never worry about rate limits interrupting your workflow:
 
 ---
 
-## 🔒 Security & Antivirus Safe
-
-* **Windows Credential Manager**: Tokens are stored securely in Windows' built-in OS vault via native Win32 C APIs (`CredReadW` / `CredWriteW`). No plaintext passwords in files or databases.
-* **AMSI Safe**: Never executes suspicious PowerShell one-liners or dynamic in-memory crypto (`Add-Type`). 100% clean with Windows Defender.
-* **Redacted Logs**: Secrets and token patterns (`ghp_*`, `gho_*`, `github_pat_*`) are automatically stripped before writing to any log.
-
----
-
-## 🧪 Testing
-
-Run the full test suite with Vitest:
-
-```powershell
-npm test
-```
-
----
-
 ## 📄 License
 
 [MIT](LICENSE) © 2026 Ahmad
+
